@@ -37,16 +37,16 @@ jobs:
           push: true
           tags: ${{ env.DOCKER_IMAGE }}:${{ env.IMAGE_TAG }},${{ env.DOCKER_IMAGE }}:latest
 
-      - name: Deploy stack to Portainer
-        uses: scod-br/portainer-stack-deploy@1.5
-        with:
-          portainer-host: ${{ secrets.PORTAINER_HOST }}
-          username: ${{ secrets.PORTAINER_USERNAME }}
-          password: ${{ secrets.PORTAINER_PASSWORD }}
-          endpoint-id: "2"
-          stack-name: "coffee-web-ui"
-          stack-definition: "stack-definition.yml"
-          template-variables: '{"username": "raymondsugiarto"}'
-          image: ${{ env.DOCKER_IMAGE }}:${{ env.IMAGE_TAG }}
-          prune-stack: true
-          pull-image: true
+      # - name: Deploy stack to Portainer
+      #   uses: scod-br/portainer-stack-deploy@1.5
+      #   with:
+      #     portainer-host: ${{ secrets.PORTAINER_HOST }}
+      #     username: ${{ secrets.PORTAINER_USERNAME }}
+      #     password: ${{ secrets.PORTAINER_PASSWORD }}
+      #     endpoint-id: "2"
+      #     stack-name: "coffee-web-ui"
+      #     stack-definition: "stack-definition.yml"
+      #     template-variables: '{"username": "raymondsugiarto"}'
+      #     image: ${{ env.DOCKER_IMAGE }}:${{ env.IMAGE_TAG }}
+      #     prune-stack: true
+      #     pull-image: true
