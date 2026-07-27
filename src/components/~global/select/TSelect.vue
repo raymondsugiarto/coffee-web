@@ -50,24 +50,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from "vue";
 import type {
   QSelectScrollOption,
   QSelectValue,
   TSelectProps,
-} from '@/types/components/tselect';
-import { useSelect } from '@/composables/tselect';
-import type { QSelect } from 'quasar';
+} from "@/types/components/tselect";
+import { useSelect } from "@/composables/tselect";
+import type { QSelect } from "quasar";
 
 defineOptions({
-  name: 'TSelect',
+  name: "TSelect",
 });
 
 const props = withDefaults(defineProps<TSelectProps>(), {
   multiple: false,
   lazyRules: false,
-  optionValue: 'id',
-  optionLabel: 'name',
+  optionValue: "id",
+  optionLabel: "name",
   rules: () => [],
   readonly: false,
   disable: false,
@@ -77,7 +77,7 @@ const select = ref<QSelect | null>(null);
 const model = ref();
 const { onSelectScroll, onFilterFn, resetOptions, loading, options } =
   useSelect(props.api);
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(["update:modelValue"]);
 
 const urlParams = computed(() => {
   resetOptions();
@@ -96,7 +96,7 @@ const scrollOption = computed<QSelectScrollOption>({
       params: urlParams.value,
       mapper: (item: unknown) => {
         if (props.mapper) {
-          return props.mapper(item as Record<string, unknown>);
+          return props.mapper(item);
         }
 
         const record = item as Record<string, unknown>;
@@ -128,13 +128,13 @@ const onScroll = ({ index, to }: { index: number; to: number }) => {
 const handleFilter = (
   val: string,
   doneFn: (callbackFn: () => void, afterFn?: (ref: QSelect) => void) => void,
-  abortFn: () => void
+  abortFn: () => void,
 ) => {
   onFilterFn({ val, doneFn, abortFn }, scrollOption.value);
 };
 
 const handleSelected = (value: QSelectValue) => {
-  emit('update:modelValue', value);
+  emit("update:modelValue", value);
 };
 
 watch(
@@ -144,7 +144,7 @@ watch(
       resetOptions();
     }
     model.value = newValue;
-  }
+  },
 );
 
 onMounted(() => {
