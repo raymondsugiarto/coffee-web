@@ -4,7 +4,6 @@
       <q-btn flat round icon="arrow_back" :to="{ name: 'dashboard' }" />
       <div class="text-h5 text-weight-bold q-ml-sm">Tutup Sesi Sore</div>
     </div>
-
     <!-- Picker if no session loaded -->
     <q-card v-if="!session && !loading" flat bordered class="q-mb-md">
       <q-card-section>
@@ -74,38 +73,31 @@
         </div>
       </q-card-section>
     </q-card>
-
     <q-inner-loading :showing="loading">
       <q-spinner-dots size="50px" color="primary" />
     </q-inner-loading>
-
     <EveningForm v-if="session" :session="session" @closed="onClosed" />
   </q-page>
 </template>
-
 <script setup lang="ts">
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/require-await, @typescript-eslint/no-misused-promises */
 import { computed, onMounted, ref } from "vue";
 import { date, useQuasar } from "quasar";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useStockSessionStore } from "@/stores/stock-session/stock-session-store";
 import type {
   DriverDto,
   StockSessionDto,
 } from "@/components/organization/stock-session/types/stock-session";
 import EveningForm from "@/components/organization/stock-session/EveningForm.vue";
-
 const route = useRoute();
+const router = useRouter();
 const $q = useQuasar();
 const store = useStockSessionStore();
-
 const loading = ref(false);
 const session = ref<StockSessionDto | null>(null);
-
 const drivers = ref<DriverDto[]>([]);
 const selectedEmployeeId = ref<string>("");
 const selectedDate = ref<string>(date.formatDate(new Date(), "YYYY-MM-DD"));
-
 const driverOptions = computed(() =>
   drivers.value.map((d) => ({
     id: d.id,
@@ -115,13 +107,13 @@ const driverOptions = computed(() =>
     email: d.email,
   })),
 );
-
-const filterDrivers = async (val: string, update: (fn: () => void) => void) => {
-  update(async () => {
-    drivers.value = await store.fetchDrivers(val);
+const filterDrivers = (val: string, update: (fn: () => void) => void) => {
+  update(() => {
+    void store.fetchDrivers(val).then((res) => {
+      drivers.value = res;
+    });
   });
 };
-
 const loadSession = async () => {
   if (!selectedEmployeeId.value) return;
   loading.value = true;
@@ -137,24 +129,48 @@ const loadSession = async () => {
       });
     }
     session.value = s;
-  } catch (err: any) {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     $q.notify({
       type: "negative",
       message: "Gagal memuat sesi.",
-      caption: err?.message ?? String(err),
+      caption: message,
     });
   } finally {
     loading.value = false;
   }
 };
-
-const onClosed = async () => {
-  // Reload latest server state
-  if (session.value) {
-    session.value = await store.getSession(session.value.id);
+const onClosed = async (closedSession: StockSessionDto) => {
+  // Refresh session state in case other consumers want it
+  if (closedSession?.id) {
+    try {
+      session.value = await store.getSession(closedSession.id);
+    } catch {
+      session.value = closedSession;
+    }
   }
-};
+  // Show success dialog and redirect to dashboard
+  $q.dialog({
+    title: "Sesi Berhasil Ditutup",
+    message: `Sesi sore untuk ${
+      closedSession?.employee
+        ? `${closedSession.employee.firstName ?? ""} ${closedSession.employee.lastName ?? ""}`.trim()
+        : "driver"
+    } telah berhasil disimpan.`,
+    ok: {
+      label: "Ke Dashboard",
+      color: "primary",
+      unelevated: true,
+    },
+    persistent: true,
+  }).onOk(() => {
+    void router.push({ name: "dashboard" });
+  });
 
+  setTimeout(() => {
+    void router.push({ name: "dashboard" });
+  }, 2500);
+};
 onMounted(async () => {
   drivers.value = await store.fetchDrivers();
   const sessionId = route.query.sessionId as string | undefined;

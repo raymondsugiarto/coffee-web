@@ -1,1 +1,5 @@
 // app global css in SCSS form
+
+// BrewFlow brand design tokens (colors, radius, dashboard bg).
+// Loaded globally so all components can use --brand-* vars.
+@use "./brand-tokens";

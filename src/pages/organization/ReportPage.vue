@@ -3,7 +3,6 @@
     <div class="row items-center q-mb-md">
       <div class="text-h5 text-weight-bold">Laporan</div>
     </div>
-
     <q-tabs
       v-model="activeTab"
       dense
@@ -18,7 +17,6 @@
       <q-tab name="performance" label="Performa Driver" />
     </q-tabs>
     <q-separator />
-
     <q-tab-panels v-model="activeTab" animated class="q-mt-md">
       <!-- Daily -->
       <q-tab-panel name="daily">
@@ -103,6 +101,36 @@
                 />
               </div>
             </div>
+            <div class="row q-col-gutter-md q-mb-md">
+              <div class="col">
+                <SummaryBox
+                  label="Komisi"
+                  :value="formatCurrency(dailyReport?.totalCommission ?? 0)"
+                  color="blue"
+                />
+              </div>
+              <div class="col">
+                <SummaryBox
+                  label="Meal Allowance"
+                  :value="formatCurrency(dailyReport?.totalMealAllowance ?? 0)"
+                  color="green"
+                />
+              </div>
+              <div class="col">
+                <SummaryBox
+                  label="Bonus Target"
+                  :value="formatCurrency(dailyReport?.totalBonusTarget ?? 0)"
+                  color="purple"
+                />
+              </div>
+              <div class="col">
+                <SummaryBox
+                  label="Total Gaji"
+                  :value="formatCurrency(dailyReport?.totalSalary ?? 0)"
+                  color="orange"
+                />
+              </div>
+            </div>
             <q-table
               :rows="dailyReport?.byEmployee ?? []"
               :columns="employeeColumns"
@@ -138,11 +166,33 @@
                   </span>
                 </q-td>
               </template>
+              <template #body-cell-commission="props">
+                <q-td :props="props" class="text-right">
+                  {{ formatCurrency(props.row.commission) }}
+                </q-td>
+              </template>
+              <template #body-cell-mealAllowance="props">
+                <q-td :props="props" class="text-right">
+                  {{ formatCurrency(props.row.mealAllowance) }}
+                </q-td>
+              </template>
+              <template #body-cell-bonusTarget="props">
+                <q-td :props="props" class="text-right">
+                  {{ formatCurrency(props.row.bonusTarget) }}
+                </q-td>
+              </template>
+              <template #body-cell-totalSalary="props">
+                <q-td
+                  :props="props"
+                  class="text-right text-weight-bold text-orange-9"
+                >
+                  {{ formatCurrency(props.row.totalSalary) }}
+                </q-td>
+              </template>
             </q-table>
           </q-card-section>
         </q-card>
       </q-tab-panel>
-
       <!-- Monthly -->
       <q-tab-panel name="monthly">
         <q-card flat bordered>
@@ -214,6 +264,38 @@
                 />
               </div>
             </div>
+            <div class="row q-col-gutter-md q-mb-md">
+              <div class="col">
+                <SummaryBox
+                  label="Komisi"
+                  :value="formatCurrency(monthlyReport?.totalCommission ?? 0)"
+                  color="blue"
+                />
+              </div>
+              <div class="col">
+                <SummaryBox
+                  label="Meal Allowance"
+                  :value="
+                    formatCurrency(monthlyReport?.totalMealAllowance ?? 0)
+                  "
+                  color="green"
+                />
+              </div>
+              <div class="col">
+                <SummaryBox
+                  label="Bonus Target"
+                  :value="formatCurrency(monthlyReport?.totalBonusTarget ?? 0)"
+                  color="purple"
+                />
+              </div>
+              <div class="col">
+                <SummaryBox
+                  label="Total Gaji"
+                  :value="formatCurrency(monthlyReport?.totalSalary ?? 0)"
+                  color="orange"
+                />
+              </div>
+            </div>
             <div class="text-subtitle1 q-mb-sm">Harian</div>
             <q-table
               :rows="monthlyReport?.daily ?? []"
@@ -229,11 +311,33 @@
                   {{ formatCurrency(props.row.totalSales) }}
                 </q-td>
               </template>
+              <template #body-cell-totalCommission="props">
+                <q-td :props="props" class="text-right">
+                  {{ formatCurrency(props.row.totalCommission) }}
+                </q-td>
+              </template>
+              <template #body-cell-totalMealAllowance="props">
+                <q-td :props="props" class="text-right">
+                  {{ formatCurrency(props.row.totalMealAllowance) }}
+                </q-td>
+              </template>
+              <template #body-cell-totalBonusTarget="props">
+                <q-td :props="props" class="text-right">
+                  {{ formatCurrency(props.row.totalBonusTarget) }}
+                </q-td>
+              </template>
+              <template #body-cell-totalSalary="props">
+                <q-td
+                  :props="props"
+                  class="text-right text-weight-bold text-orange-9"
+                >
+                  {{ formatCurrency(props.row.totalSalary) }}
+                </q-td>
+              </template>
             </q-table>
           </q-card-section>
         </q-card>
       </q-tab-panel>
-
       <!-- Top Products -->
       <q-tab-panel name="top">
         <q-card flat bordered>
@@ -307,7 +411,6 @@
           </q-table>
         </q-card>
       </q-tab-panel>
-
       <!-- Performance -->
       <q-tab-panel name="performance">
         <q-card flat bordered>
@@ -398,38 +501,58 @@
                 </span>
               </q-td>
             </template>
+            <template #body-cell-commission="props">
+              <q-td :props="props" class="text-right">
+                {{ formatCurrency(props.row.commission) }}
+              </q-td>
+            </template>
+            <template #body-cell-mealAllowance="props">
+              <q-td :props="props" class="text-right">
+                {{ formatCurrency(props.row.mealAllowance) }}
+              </q-td>
+            </template>
+            <template #body-cell-bonusTarget="props">
+              <q-td :props="props" class="text-right">
+                {{ formatCurrency(props.row.bonusTarget) }}
+              </q-td>
+            </template>
+            <template #body-cell-totalSalary="props">
+              <q-td
+                :props="props"
+                class="text-right text-weight-bold text-orange-9"
+              >
+                {{ formatCurrency(props.row.totalSalary) }}
+              </q-td>
+            </template>
           </q-table>
         </q-card>
       </q-tab-panel>
     </q-tab-panels>
   </q-page>
 </template>
-
 <script setup lang="ts">
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { date } from "quasar";
+import type { QTableColumn } from "quasar";
 import { onMounted, ref } from "vue";
 import { useStockSessionStore } from "@/stores/stock-session/stock-session-store";
+import { formatCurrency } from "@/composables/format";
 import type {
   DailyReportDto,
   EmployeePerformanceRowDto,
+  EmployeeReportRowDto,
   MonthlyReportDto,
   TopProductRowDto,
 } from "@/components/organization/stock-session/types/stock-session";
 import SummaryBox from "@/components/organization/stock-session/SummaryBox.vue";
-
 const store = useStockSessionStore();
-
 const activeTab = ref<"daily" | "monthly" | "top" | "performance">("daily");
 const today = date.formatDate(new Date(), "YYYY-MM-DD");
 const monthAgo = date.formatDate(
   new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
   "YYYY-MM-DD",
 );
-
 const dailyDate = ref(today);
 const dailyReport = ref<DailyReportDto | null>(null);
-
 const now = new Date();
 const monthlyYear = ref(now.getFullYear());
 const monthlyMonth = ref(now.getMonth() + 1);
@@ -453,18 +576,14 @@ const yearOptions = (() => {
   for (let y = start; y <= now.getFullYear(); y++) arr.push(y);
   return arr;
 })();
-
 const monthlyReport = ref<MonthlyReportDto | null>(null);
-
 const topFrom = ref(monthAgo);
 const topTo = ref(today);
 const topProducts = ref<TopProductRowDto[]>([]);
-
 const perfFrom = ref(monthAgo);
 const perfTo = ref(today);
 const performance = ref<EmployeePerformanceRowDto[]>([]);
-
-const employeeColumns: any[] = [
+const employeeColumns: QTableColumn<EmployeeReportRowDto>[] = [
   {
     name: "employeeName",
     label: "Driver",
@@ -507,9 +626,36 @@ const employeeColumns: any[] = [
     align: "right" as const,
     sortable: true,
   },
+  {
+    name: "commission",
+    label: "Komisi",
+    field: "commission",
+    align: "right" as const,
+    sortable: true,
+  },
+  {
+    name: "mealAllowance",
+    label: "Meal Allowance",
+    field: "mealAllowance",
+    align: "right" as const,
+    sortable: true,
+  },
+  {
+    name: "bonusTarget",
+    label: "Bonus Target",
+    field: "bonusTarget",
+    align: "right" as const,
+    sortable: true,
+  },
+  {
+    name: "totalSalary",
+    label: "Total Gaji",
+    field: "totalSalary",
+    align: "right" as const,
+    sortable: true,
+  },
 ];
-
-const dailyColumns: any[] = [
+const dailyColumns: QTableColumn<DailyReportDto>[] = [
   {
     name: "date",
     label: "Tanggal",
@@ -552,9 +698,36 @@ const dailyColumns: any[] = [
     align: "right" as const,
     sortable: true,
   },
+  {
+    name: "totalCommission",
+    label: "Komisi",
+    field: "totalCommission",
+    align: "right" as const,
+    sortable: true,
+  },
+  {
+    name: "totalMealAllowance",
+    label: "Meal Allowance",
+    field: "totalMealAllowance",
+    align: "right" as const,
+    sortable: true,
+  },
+  {
+    name: "totalBonusTarget",
+    label: "Bonus Target",
+    field: "totalBonusTarget",
+    align: "right" as const,
+    sortable: true,
+  },
+  {
+    name: "totalSalary",
+    label: "Total Gaji",
+    field: "totalSalary",
+    align: "right" as const,
+    sortable: true,
+  },
 ];
-
-const topColumns: any[] = [
+const topColumns: QTableColumn<TopProductRowDto>[] = [
   {
     name: "sku",
     label: "SKU",
@@ -584,8 +757,7 @@ const topColumns: any[] = [
     sortable: true,
   },
 ];
-
-const performanceColumns: any[] = [
+const performanceColumns: QTableColumn<EmployeePerformanceRowDto>[] = [
   {
     name: "employeeName",
     label: "Driver",
@@ -635,8 +807,35 @@ const performanceColumns: any[] = [
     align: "right" as const,
     sortable: true,
   },
+  {
+    name: "commission",
+    label: "Komisi",
+    field: "commission",
+    align: "right" as const,
+    sortable: true,
+  },
+  {
+    name: "mealAllowance",
+    label: "Meal Allowance",
+    field: "mealAllowance",
+    align: "right" as const,
+    sortable: true,
+  },
+  {
+    name: "bonusTarget",
+    label: "Bonus Target",
+    field: "bonusTarget",
+    align: "right" as const,
+    sortable: true,
+  },
+  {
+    name: "totalSalary",
+    label: "Total Gaji",
+    field: "totalSalary",
+    align: "right" as const,
+    sortable: true,
+  },
 ];
-
 const loadDaily = async () => {
   dailyReport.value = await store.fetchDailyReport(dailyDate.value);
 };
@@ -655,32 +854,41 @@ const loadPerformance = async () => {
     perfTo.value,
   );
 };
-
-const formatCurrency = (n: number): string =>
-  "Rp " + new Intl.NumberFormat("id-ID").format(Math.round(n ?? 0));
-
+// formatCurrency imported from @/composables/format
 // Simple CSV / PDF export (browser-side)
+interface CsvRow {
+  [key: string]: string | number | undefined;
+}
+
 const exportCsv = (kind: "daily" | "monthly" | "top" | "performance") => {
-  let rows: any[] = [];
+  const rows: CsvRow[] = [];
   let headers: string[] = [];
   if (kind === "daily") {
     headers = ["Driver", "Sesi", "Sales", "Cash", "QRIS", "Selisih"];
-    rows = (dailyReport.value?.byEmployee ?? []).map((r) => ({
-      Driver: r.employeeName,
-      Sesi: r.sessions,
-      Sales: r.totalSales,
-      Cash: r.totalCash,
-      QRIS: r.totalQris,
-      Selisih: r.difference,
-    }));
+    for (const r of dailyReport.value?.byEmployee ?? []) {
+      rows.push({
+        Driver: r.employeeName,
+        Sesi: r.sessions,
+        Sales: r.totalSales,
+        Cash: r.totalCash,
+        QRIS: r.totalQris,
+        Selisih: r.difference,
+      });
+    }
   } else if (kind === "top") {
     headers = ["SKU", "Produk", "Qty", "Sales"];
-    rows = topProducts.value.map((r) => ({
-      SKU: r.sku,
-      Produk: r.productName,
-      Qty: r.totalQty,
-      Sales: r.totalSales,
-    }));
+    for (const r of topProducts.value) {
+      rows.push({
+        SKU: r.sku,
+        Produk: r.productName,
+        Qty: r.totalQty,
+        Sales: r.totalSales,
+      });
+    }
+  } else {
+    // monthly / performance fall back to daily for now
+    headers = ["Note"];
+    rows.push({ Note: `Use the appropriate tab for ${kind} export.` });
   }
   const csv = [
     headers.join(","),
@@ -694,12 +902,12 @@ const exportCsv = (kind: "daily" | "monthly" | "top" | "performance") => {
   a.click();
   URL.revokeObjectURL(url);
 };
-
 const exportPdf = (kind: "daily" | "monthly") => {
-  // Lightweight: trigger print dialog
+  // Lightweight: trigger print dialog scoped to current tab
+  if (kind === "daily") activeTab.value = "daily";
+  else activeTab.value = "monthly";
   window.print();
 };
-
 onMounted(() => {
   void loadDaily();
   void loadMonthly();

@@ -36,6 +36,27 @@ export const useStockSessionStore = defineStore("stockSession", {
       return res.data.contents;
     },
 
+    /**
+     * Fetch child items for one or more parent IDs. Used by the close-session
+     * UI to auto-expand a parent product into its variants.
+     *
+     * Example: open session picked "Matcha". Calling this with parentIds=[matchaId]
+     * returns ["Matcha Mango", "Matcha Strawberry", ...] for qty tracking.
+     */
+    async fetchItemChildren(
+      parentIds: string[],
+      includeInactive = false,
+    ): Promise<ItemDto[]> {
+      if (parentIds.length === 0) return [];
+      const params = new URLSearchParams();
+      params.set("parentIds", parentIds.join(","));
+      if (includeInactive) params.set("includeInactive", "true");
+      const res = await api.get<DefaultResponse<ItemDto[]>>(
+        `/api/products/children?${params.toString()}`,
+      );
+      return res.data;
+    },
+
     async fetchDrivers(query = ""): Promise<DriverDto[]> {
       const params = new URLSearchParams();
       params.set("size", "200");

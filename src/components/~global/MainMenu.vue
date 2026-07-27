@@ -49,6 +49,12 @@ const menus: MenuItem[] = [
     appType: AppType.ADMIN,
     children: [
       {
+        id: "list",
+        label: "Daftar Sesi",
+        icon: "list_alt",
+        to: "/stock-session",
+      },
+      {
         id: "morning",
         label: "Buka Sesi Pagi",
         icon: "wb_sunny",
@@ -69,6 +75,54 @@ const menus: MenuItem[] = [
     to: "/report",
     expanded: null,
     appType: AppType.ADMIN,
+  },
+  {
+    id: "payroll",
+    label: "Payroll",
+    icon: "payments",
+    expanded: true,
+    appType: AppType.ADMIN,
+    children: [
+      {
+        id: "salary-components",
+        label: "Komponen Gaji",
+        icon: "redeem",
+        to: "/payroll/salary-components",
+      },
+      {
+        id: "payroll-run",
+        label: "Payroll Run",
+        icon: "point_of_sale",
+        to: "/payroll",
+      },
+      {
+        id: "cash-debts",
+        label: "Cash Debt",
+        icon: "request_quote",
+        to: "/payroll/cash-debts",
+      },
+    ],
+  },
+  {
+    id: "catalog",
+    label: "Katalog Produk",
+    icon: "inventory_2",
+    expanded: true,
+    appType: AppType.ADMIN,
+    children: [
+      {
+        id: "categories",
+        label: "Kategori",
+        icon: "category",
+        to: "/catalog/categories",
+      },
+      {
+        id: "items",
+        label: "Produk",
+        icon: "local_cafe",
+        to: "/catalog/items",
+      },
+    ],
   },
   {
     id: "company",

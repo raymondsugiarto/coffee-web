@@ -1,5 +1,5 @@
-import type { QSelect, QSelectSlots, ValidationRule } from 'quasar';
-import type { AxiosInstance } from 'axios';
+import type { QSelect, QSelectSlots, ValidationRule } from "quasar";
+import type { AxiosInstance } from "axios";
 
 export interface QSelectValue<T = unknown> {
   value: string;
@@ -33,4 +33,4 @@ export interface TSelectProps {
   mapper?: (args: unknown) => QSelectValue;
 }
 
-export type TSelectSlots = QSelectSlots
+export type TSelectSlots = QSelectSlots;

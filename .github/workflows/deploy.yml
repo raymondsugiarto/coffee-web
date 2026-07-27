@@ -2,7 +2,7 @@ name: Deploy
 
 on:
   push:
-    branches: ['main']
+    branches: ["main"]
 
 jobs:
   deploy:
@@ -13,7 +13,7 @@ jobs:
     env:
       GITHUB_REF: ${{ github.ref }}
       DOCKER_REGISTRY: ghcr.io
-      DOCKER_IMAGE: raymondsugiarto/join-discount-ui
+      DOCKER_IMAGE: raymondsugiarto/coffee-web-ui
 
     steps:
       - name: Checkout
@@ -43,9 +43,9 @@ jobs:
           portainer-host: ${{ secrets.PORTAINER_HOST }}
           username: ${{ secrets.PORTAINER_USERNAME }}
           password: ${{ secrets.PORTAINER_PASSWORD }}
-          endpoint-id: '2'
-          stack-name: 'join-discount-ui'
-          stack-definition: 'stack-definition.yml'
+          endpoint-id: "2"
+          stack-name: "coffee-web-ui"
+          stack-definition: "stack-definition.yml"
           template-variables: '{"username": "raymondsugiarto"}'
           image: ${{ env.DOCKER_IMAGE }}:${{ env.IMAGE_TAG }}
           prune-stack: true

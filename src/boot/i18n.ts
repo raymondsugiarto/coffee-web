@@ -9,17 +9,12 @@ export type MessageSchema = (typeof messages)['en-US'];
 
 // See https://vue-i18n.intlify.dev/guide/advanced/typescript.html#global-resource-schema-type-definition
 declare module 'vue-i18n' {
-  // define the locale messages schema
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-  export interface DefineLocaleMessage extends MessageSchema {}
-
-  // define the datetime format schema
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-  export interface DefineDateTimeFormat {}
-
-  // define the number format schema
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-  export interface DefineNumberFormat {}
+  // Define the locale messages schema. The `_brand` member is a phantom
+  // property used to satisfy the linter's empty-interface rule while still
+  // fulfilling vue-i18n's interface-merging requirement.
+  export interface DefineLocaleMessage extends MessageSchema {
+    readonly _brand?: never;
+  }
 }
 
 export default boot(({ app }) => {

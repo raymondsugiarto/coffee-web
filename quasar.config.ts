@@ -5,6 +5,34 @@ import { defineConfig } from "#q-app/wrappers";
 import { fileURLToPath } from "node:url";
 
 import path from "path";
+import fs from "node:fs";
+
+// quasar.config.ts runs in plain Node (before Vite), so .env is NOT
+// auto-injected into process.env. We load it manually so that
+// process.env.API_URL below resolves correctly.
+function loadEnvFile(filePath: string): void {
+  if (!fs.existsSync(filePath)) return;
+  const content = fs.readFileSync(filePath, "utf8");
+  for (const rawLine of content.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const eq = line.indexOf("=");
+    if (eq === -1) continue;
+    const key = line.slice(0, eq).trim();
+    let value = line.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    if (process.env[key] === undefined) {
+      process.env[key] = value;
+    }
+  }
+}
+
+loadEnvFile(path.join(__dirname, ".env"));
 
 export default defineConfig((ctx) => {
   return {
@@ -105,20 +133,23 @@ export default defineConfig((ctx) => {
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#devserver
     devServer: {
       // https: true,
-      open: true, // opens browser window automatically
+      open: false, // opens browser window automatically
+      // proxy: {
+      //   // "/api": "http://127.0.0.1:3030",
+      //   "/api": {
+      //     target: process.env.API_URL || "",
+      //     changeOrigin: true,
+      //     rewrite: (path) => path.replace(/^\/api/, "/api"),
+      //   },
+      // },
       proxy: {
         "/api": {
           target: process.env.API_URL || "",
+          changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, "/api"),
-          configure: (proxy) => {
-            if (!process.env.API_URL) {
-              throw new Error("API_URL is not set; add it to .env");
-            }
-            // proxy will be an instance of 'http-proxy'
-            proxy.on("proxyReq", function (proxyReq) {
-              proxyReq.setHeader("x-origin", "sekian");
-              proxyReq.setHeader("x-origin-type", "ADMIN");
-            });
+          headers: {
+            "x-origin": "sekian",
+            "x-origin-type": "ADMIN",
           },
         },
       },
@@ -139,7 +170,7 @@ export default defineConfig((ctx) => {
       // directives: [],
 
       // Quasar plugins
-      plugins: [],
+      plugins: ["Notify", "Dialog", "Loading"],
     },
 
     // animations: 'all', // --- includes all animations

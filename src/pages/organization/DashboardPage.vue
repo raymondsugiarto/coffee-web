@@ -7,7 +7,6 @@
         {{ today }}
       </q-chip>
     </div>
-
     <!-- KPI Cards -->
     <div class="row q-col-gutter-md q-mb-md">
       <div class="col-12 col-sm-6 col-md-2">
@@ -52,7 +51,6 @@
         />
       </div>
     </div>
-
     <!-- Quick Actions -->
     <q-card flat bordered class="q-mb-md">
       <q-card-section>
@@ -77,6 +75,14 @@
           <q-btn
             color="primary"
             unelevated
+            icon="list_alt"
+            label="Daftar Sesi"
+            no-caps
+            :to="{ name: 'stock-session-list' }"
+          />
+          <q-btn
+            color="primary"
+            unelevated
             icon="assessment"
             label="Laporan"
             no-caps
@@ -85,7 +91,6 @@
         </div>
       </q-card-section>
     </q-card>
-
     <!-- Sessions table -->
     <q-card flat bordered>
       <q-card-section class="row items-center q-py-sm">
@@ -160,92 +165,88 @@
     </q-card>
   </q-page>
 </template>
-
 <script setup lang="ts">
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { date } from "quasar";
+import type { QTableColumn } from "quasar";
 import { onMounted, ref } from "vue";
 import { useStockSessionStore } from "@/stores/stock-session/stock-session-store";
+import { formatCurrency } from "@/composables/format";
 import type {
   DashboardSummaryDto,
   StockSessionDto,
 } from "@/components/organization/stock-session/types/stock-session";
 import SummaryBox from "@/components/organization/stock-session/SummaryBox.vue";
-
 const store = useStockSessionStore();
 const loading = ref(false);
 const today = date.formatDate(new Date(), "YYYY-MM-DD");
-
 const dashboard = ref<DashboardSummaryDto | null>(null);
 const sessions = ref<StockSessionDto[]>([]);
-
-const columns: any[] = [
+const columns: QTableColumn<StockSessionDto>[] = [
   {
     name: "employee",
     label: "Driver",
-    field: (r: StockSessionDto) =>
+    field: (r) =>
       `${r.employee?.firstName ?? ""} ${r.employee?.lastName ?? ""}`.trim(),
-    align: "left" as const,
+    align: "left",
     sortable: true,
   },
   {
     name: "date",
     label: "Tanggal",
     field: "date",
-    align: "left" as const,
+    align: "left",
     sortable: true,
   },
   {
     name: "status",
     label: "Status",
     field: "status",
-    align: "left" as const,
+    align: "left",
     sortable: true,
   },
   {
     name: "totalItems",
     label: "Items",
     field: "totalItems",
-    align: "right" as const,
+    align: "right",
     sortable: true,
   },
   {
     name: "totalSales",
     label: "Sales",
     field: "totalSales",
-    align: "right" as const,
+    align: "right",
     sortable: true,
   },
   {
     name: "totalCash",
     label: "Cash",
     field: "totalCash",
-    align: "right" as const,
+    align: "right",
     sortable: true,
   },
   {
     name: "totalQris",
     label: "QRIS",
     field: "totalQris",
-    align: "right" as const,
+    align: "right",
     sortable: true,
   },
   {
     name: "difference",
     label: "Selisih",
     field: "difference",
-    align: "right" as const,
+    align: "right",
     sortable: true,
   },
   {
     name: "actions",
     label: "",
-    field: "actions",
-    align: "right" as const,
+    field: () => "",
+    align: "right",
     sortable: false,
   },
 ];
-
 const loadDashboard = async () => {
   loading.value = true;
   try {
@@ -259,9 +260,6 @@ const loadDashboard = async () => {
     loading.value = false;
   }
 };
-
-const formatCurrency = (n: number): string =>
-  "Rp " + new Intl.NumberFormat("id-ID").format(Math.round(n ?? 0));
-
+// formatCurrency imported from @/composables/format
 onMounted(loadDashboard);
 </script>

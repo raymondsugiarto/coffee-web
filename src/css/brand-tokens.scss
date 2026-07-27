@@ -1,0 +1,40 @@
+// BrewFlow Brand Tokens
+// --------------------------------------------------
+// Source of truth: .brand/brand-guideline.md (v1.0)
+// Use these CSS custom properties anywhere in the app
+// for raw color values that are not already exposed by
+// Quasar (--q-primary, --q-secondary, ...).
+//
+// When you need a Quasar semantic color, prefer the
+// `--q-*` variables that come from quasar.variables.scss.
+
+:root {
+  // === Primary Coffee Colors (§13) ===
+  --brand-dark-espresso: #3b2416; // Logo, headings, icons
+  --brand-coffee-brown: #6f4e37; // Secondary text, charts, accent
+  --brand-cream: #f7f3ee; // Backgrounds, cards
+
+  // === Growth Green (§13) ===
+  --brand-primary-green: #4e8b3a; // Primary CTA, buttons, charts, logo
+  --brand-success-green: #63b246; // Success, positive growth, profit
+  --brand-soft-green: #ddefd5; // Background highlights, badges
+
+  // === Neutral (§13) ===
+  --brand-charcoal: #222222; // Primary text
+  --brand-gray: #707070; // Secondary text
+  --brand-light-gray: #ececec; // Borders, dividers
+  --brand-white: #ffffff; // Cards, background
+
+  // === Dashboard Theme (§19) ===
+  --brand-bg-dashboard: #fafafa; // Dashboard canvas
+
+  // === Accent / Semantic (derived from §19) ===
+  --brand-orange: #f2a03d; // Warning — Dashboard Theme "Orange"
+
+  // === Border Radius (§16) ===
+  --brand-radius-button: 10px;
+  --brand-radius-card: 16px;
+  --brand-radius-input: 10px;
+  --brand-radius-dialog: 20px;
+  --brand-radius-chart: 12px;
+}

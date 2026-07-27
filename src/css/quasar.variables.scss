@@ -12,14 +12,15 @@
 // to match your app's branding.
 // Tip: Use the "Theme Builder" on Quasar's documentation website.
 
-$primary   : #1976D2;
-$secondary : #26A69A;
-$accent    : #9C27B0;
+// BrewFlow brand palette — see .brand/brand-guideline.md §13 / §19
+$primary: #4e8b3a; // Primary Green (brand CTA, buttons, charts)
+$secondary: #6f4e37; // Coffee Brown (accent, charts, secondary text)
+$accent: #3b2416; // Dark Espresso (logo, headings, icons)
 
-$dark      : #1D1D1D;
-$dark-page : #121212;
+$dark: #222222; // Charcoal (primary text)
+$dark-page: #fafafa; // Dashboard canvas (§19)
 
-$positive  : #21BA45;
-$negative  : #C10015;
-$info      : #31CCEC;
-$warning   : #F2C037;
+$positive: #63b246; // Success Green (success, growth, profit)
+$negative: #c10015; // Red (dashboard "Error", §19)
+$info: #6f4e37; // Coffee Brown (info accent, kept on-brand)
+$warning: #f2a03d; // Orange (dashboard "Warning", §19)
