@@ -2,7 +2,7 @@
 # BUILD FOR LOCAL DEVELOPMENT
 ###################
 
-FROM node:22-alpine As development
+FROM node:22-alpine as development
 
 # Create app directory
 WORKDIR /usr/src/app
@@ -12,12 +12,18 @@ WORKDIR /usr/src/app
 # Copying this first prevents re-running npm install on every code change.
 COPY --chown=node:node package*.json ./
 
-# Install app dependencies using the `npm ci` command instead of `npm install`
+# Install app dependencies. `--ignore-scripts` skips the `quasar prepare`
+# postinstall, which needs the full project tree (quasar.config.ts, etc.).
+# We run `quasar prepare` explicitly below, after copying the source — this
+# also keeps the deps layer cacheable so source edits don't reinstall node_modules.
 # RUN npm ci
-RUN yarn install --immutable --immutable-cache --check-cache
+RUN yarn install --immutable --immutable-cache --check-cache --ignore-scripts
 
 # Bundle app source
 COPY --chown=node:node . .
+
+# Run the postinstall step that the previous install skipped.
+RUN yarn quasar prepare
 
 # Use the node user from the image (instead of the root user)
 USER node
@@ -26,26 +32,29 @@ USER node
 # BUILD FOR PRODUCTION
 ###################
 
-FROM node:22-alpine As build
+FROM node:22-alpine as build
 
 WORKDIR /usr/src/app
 
 COPY --chown=node:node package*.json ./
 
-# In order to run `npm run build` we need access to the Nest CLI which is a dev dependency. In the previous development stage we ran `npm ci` which installed all dependencies, so we can copy over the node_modules directory from the development image
+# In order to run `yarn build` we need access to the @quasar/app-vite dev dependency. In the previous development stage we ran `yarn install` which installed all dependencies, so we can copy over the node_modules directory from the development image
 COPY --chown=node:node --from=development /usr/src/app/node_modules ./node_modules
 
 COPY --chown=node:node . .
 
-# Run the build command which creates the production bundle
-RUN yarn build
+# Prepare Quasar's .quasar/ directory, then build the production bundle.
+RUN yarn quasar prepare \
+ && yarn build
 
 # Set NODE_ENV environment variable
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
-# Running `npm ci` removes the existing node_modules directory and passing in --only=production ensures that only the production dependencies are installed. This ensures that the node_modules directory is as optimized as possible
+# Reinstall with NODE_ENV=production so devDependencies are pruned from node_modules.
+# `--ignore-scripts` is safe here — postinstall has already run above.
 # RUN npm ci --only=production && npm cache clean --force
-RUN yarn install --immutable --immutable-cache --check-cache && yarn cache clean
+RUN yarn install --immutable --immutable-cache --check-cache --ignore-scripts \
+ && yarn cache clean
 
 USER node
 
@@ -53,7 +62,7 @@ USER node
 # PRODUCTION
 ###################
 
-FROM node:22-alpine As production
+FROM node:22-alpine as production
 
 # Copy the bundled code from the build stage to the production image
 COPY --chown=node:node --from=build /usr/src/app/node_modules ./node_modules
