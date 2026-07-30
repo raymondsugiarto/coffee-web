@@ -25,12 +25,20 @@ export const useStockSessionStore = defineStore("stockSession", {
   }),
 
   actions: {
-    async fetchItems(query = ""): Promise<ItemDto[]> {
+    async fetchItems(
+      adminId = "",
+      query = "",
+      additionalParams: Record<string, unknown> = {},
+    ): Promise<ItemDto[]> {
       const params = new URLSearchParams();
       params.set("size", "200");
       if (query) params.set("query", query);
+      if (adminId) params.set("adminId", adminId);
+      for (const [key, value] of Object.entries(additionalParams)) {
+        params.set(key, String(value));
+      }
       const res = await api.get<DefaultResponse<PageTableDto<ItemDto>>>(
-        `/api/products?${params.toString()}`,
+        `/api/items?${params.toString()}`,
       );
       this.items = res.data.contents;
       return res.data.contents;

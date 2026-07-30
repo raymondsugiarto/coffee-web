@@ -95,7 +95,7 @@
           icon="inventory_2"
           :label="`${form.items.length} item`"
         />
-        <q-btn
+        <!-- <q-btn
           color="primary"
           icon="add"
           :label="$q.screen.gt.xs ? 'Tambah Produk' : ''"
@@ -111,7 +111,7 @@
           >
             Tambah Produk
           </q-tooltip>
-        </q-btn>
+        </q-btn> -->
       </q-card-section>
       <q-separator />
 
@@ -266,12 +266,12 @@
       </q-card-section>
     </q-card>
 
-    <ItemPickerDialog
+    <!-- <ItemPickerDialog
       v-model="pickerOpen"
       :pre-selected-ids="form.items.map((it) => it.itemId)"
       @pick="onPickItem"
       @pick-multiple="onPickItems"
-    />
+    /> -->
 
     <!-- ====== Action Footer (responsive) ====== -->
     <div class="action-footer">
@@ -315,10 +315,8 @@ import { useStockSessionStore } from "@/stores/stock-session/stock-session-store
 import { formatCurrency } from "@/composables/format";
 import type {
   DriverDto,
-  ItemDto,
   StockSessionItemInputDto,
 } from "./types/stock-session";
-import ItemPickerDialog from "./ItemPickerDialog.vue";
 
 type FormItem = StockSessionItemInputDto & {
   sellingPriceSnapshot: number;
@@ -354,7 +352,6 @@ const form = reactive({
 });
 
 const drivers = ref<DriverDto[]>([]);
-const pickerOpen = ref(false);
 const submitting = ref(false);
 
 const itemColumns: QTableColumn<ItemRow>[] = [
@@ -449,7 +446,8 @@ const filterDrivers = (val: string, update: (fn: () => void) => void) => {
   });
 };
 
-const onDriverChange = async () => {
+const onDriverChange = async (val: DriverDto) => {
+  console.log(val);
   if (!form.employeeId) return;
   const existing = await store.getTodaySession(form.employeeId, form.date);
   if (existing) {
@@ -459,33 +457,60 @@ const onDriverChange = async () => {
       caption: existing.id,
     });
   }
+  await loadItems();
 };
 
-const openPicker = () => {
-  // Capture the row snapshot at open-time so the dialog's final
-  // selection can be reconciled as additions vs. removals.
-  dialogOpenSnapshot = new Set(form.items.map((it) => it.itemId));
-  pickerOpen.value = true;
+// ====== Load items for the selected driver ======
+const loading = ref(false);
+const loadItems = async () => {
+  if (!form.employeeId) return;
+  try {
+    await store.fetchItems(form.employeeId, "", {
+      session: "MORNING",
+    }); // employeeId = adminID
+  } finally {
+    loading.value = false;
+  }
+  // Pre-fill the form with the driver's items, but only if the form is
+  // currently empty (i.e. the admin hasn't already added some items).
+  form.items = store.items.map((it) => ({
+    itemId: it.id,
+    item: it,
+    outQty: 0,
+    returnQty: 0,
+    sellingPriceSnapshot: it.sellingPrice,
+    subtotal: 0,
+    cashlessSoldQty: 0,
+    cashSoldQty: 0,
+    soldQty: 0,
+  }));
 };
+
+// const openPicker = () => {
+//   // Capture the row snapshot at open-time so the dialog's final
+//   // selection can be reconciled as additions vs. removals.
+//   dialogOpenSnapshot = new Set(form.items.map((it) => it.itemId));
+//   pickerOpen.value = true;
+// };
 
 // Snapshot taken when the picker dialog opens. Used to reconcile
 // additions vs removals when the dialog emits its final selection.
 // `form.items` snapshot is taken via `openPicker` and read here.
-let dialogOpenSnapshot = new Set<string>();
+// const dialogOpenSnapshot = new Set<string>();
 
-const onPickItem = (p: ItemDto) => {
-  if (form.items.some((it) => it.itemId === p.id)) {
-    return;
-  }
-  form.items.push({
-    itemId: p.id,
-    item: p,
-    outQty: 0,
-    returnQty: 0,
-    sellingPriceSnapshot: p.sellingPrice,
-    subtotal: 0,
-  } as FormItem);
-};
+// const onPickItem = (p: ItemDto) => {
+//   if (form.items.some((it) => it.itemId === p.id)) {
+//     return;
+//   }
+//   form.items.push({
+//     itemId: p.id,
+//     item: p,
+//     outQty: 0,
+//     returnQty: 0,
+//     sellingPriceSnapshot: p.sellingPrice,
+//     subtotal: 0,
+//   } as FormItem);
+// };
 
 /**
  * Multi-select handler fired by the picker dialog when the admin taps
@@ -499,37 +524,37 @@ const onPickItem = (p: ItemDto) => {
  * items the admin actually touches, not on rows that were already in
  * the form from some earlier interaction.
  */
-const onPickItems = (picks: ItemDto[]): void => {
-  const finalIds = new Set(picks.map((p) => p.id));
-  // Removals: items that were in the snapshot but are now unchecked.
-  const toRemove = [...dialogOpenSnapshot].filter((id) => !finalIds.has(id));
-  for (const id of toRemove) {
-    const idx = form.items.findIndex((it) => it.itemId === id);
-    if (idx >= 0) form.items.splice(idx, 1);
-  }
-  // Additions: items now checked that weren't there.
-  let added = 0;
-  for (const p of picks) {
-    if (form.items.some((it) => it.itemId === p.id)) continue;
-    form.items.push({
-      itemId: p.id,
-      item: p,
-      outQty: 0,
-      returnQty: 0,
-      sellingPriceSnapshot: p.sellingPrice,
-      subtotal: 0,
-    } as FormItem);
-    added++;
-  }
-  dialogOpenSnapshot = finalIds; // refresh for next open
-  // Friendly feedback when only removals happened (no toast spam).
-  if (added === 0 && toRemove.length === 0) {
-    $q.notify({
-      type: "info",
-      message: "Tidak ada perubahan pada produk yang dibawa.",
-    });
-  }
-};
+// const onPickItems = (picks: ItemDto[]): void => {
+//   const finalIds = new Set(picks.map((p) => p.id));
+//   // Removals: items that were in the snapshot but are now unchecked.
+//   const toRemove = [...dialogOpenSnapshot].filter((id) => !finalIds.has(id));
+//   for (const id of toRemove) {
+//     const idx = form.items.findIndex((it) => it.itemId === id);
+//     if (idx >= 0) form.items.splice(idx, 1);
+//   }
+//   // Additions: items now checked that weren't there.
+//   let added = 0;
+//   for (const p of picks) {
+//     if (form.items.some((it) => it.itemId === p.id)) continue;
+//     form.items.push({
+//       itemId: p.id,
+//       item: p,
+//       outQty: 0,
+//       returnQty: 0,
+//       sellingPriceSnapshot: p.sellingPrice,
+//       subtotal: 0,
+//     } as FormItem);
+//     added++;
+//   }
+//   dialogOpenSnapshot = finalIds; // refresh for next open
+//   // Friendly feedback when only removals happened (no toast spam).
+//   if (added === 0 && toRemove.length === 0) {
+//     $q.notify({
+//       type: "info",
+//       message: "Tidak ada perubahan pada produk yang dibawa.",
+//     });
+//   }
+// };
 
 const removeItem = (idx: number) => {
   form.items.splice(idx, 1);
