@@ -50,19 +50,30 @@ export const useStockSessionStore = defineStore("stockSession", {
      *
      * Example: open session picked "Matcha". Calling this with parentIds=[matchaId]
      * returns ["Matcha Mango", "Matcha Strawberry", ...] for qty tracking.
+     *
+     * The backend wraps the response in `PageTableDto<ItemDto>` so the same
+     * pagination envelope as `fetchItems` is reused. We bump the page size
+     * to comfortably exceed any realistic variant count per session so the
+     * caller always gets the full result set in one round trip.
      */
     async fetchItemChildren(
+      adminId = "",
       parentIds: string[],
       includeInactive = false,
     ): Promise<ItemDto[]> {
       if (parentIds.length === 0) return [];
       const params = new URLSearchParams();
+      // Large page size — variant fan-out per session is small, but we
+      // want a single round-trip and never silently truncate the close
+      // form's variant list.
+      params.set("size", "500");
+      if (adminId) params.set("adminId", adminId);
       params.set("parentIds", parentIds.join(","));
       if (includeInactive) params.set("includeInactive", "true");
-      const res = await api.get<DefaultResponse<ItemDto[]>>(
-        `/api/products/children?${params.toString()}`,
+      const res = await api.get<DefaultResponse<PageTableDto<ItemDto>>>(
+        `/api/items?${params.toString()}`,
       );
-      return res.data;
+      return res.data.contents ?? [];
     },
 
     async fetchDrivers(query = ""): Promise<DriverDto[]> {
