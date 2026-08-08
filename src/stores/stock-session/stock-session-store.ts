@@ -110,6 +110,19 @@ export const useStockSessionStore = defineStore("stockSession", {
       return res.data;
     },
 
+    /**
+     * Delete an OPEN stock session (and its child items / payments /
+     * adjustments in a single server-side transaction). Refuses to
+     * delete CLOSED sessions on the server side; the caller should
+     * hide the button but this is a defensive check on the backend.
+     */
+    async deleteSession(id: string): Promise<void> {
+      await api.delete(`/api/stock-session/${id}`);
+      if (this.currentSession?.id === id) {
+        this.currentSession = null;
+      }
+    },
+
     async getTodaySession(
       employeeId: string,
       date: string,

@@ -6,9 +6,18 @@
         <div class="row items-center no-wrap q-mb-sm">
           <q-icon name="wb_sunny" size="22px" color="blue-9" class="q-mr-sm" />
           <div class="text-h6 text-blue-9 text-weight-bold">
-            Morning Session
+            {{ isEditMode ? "Edit Sesi Pagi" : "Morning Session" }}
           </div>
           <q-space />
+          <q-chip
+            v-if="isEditMode"
+            dense
+            color="orange-9"
+            text-color="white"
+            icon="lock_open"
+            :label="`Status: ${loadedSession?.status ?? '-'}`"
+            class="q-mr-xs"
+          />
           <q-chip
             dense
             color="blue-8"
@@ -52,6 +61,7 @@
               outlined
               dense
               label="Driver (Karyawan)"
+              :disable="isEditMode"
               use-input
               input-debounce="300"
               @filter="filterDrivers"
@@ -95,23 +105,6 @@
           icon="inventory_2"
           :label="`${form.items.length} item`"
         />
-        <!-- <q-btn
-          color="primary"
-          icon="add"
-          :label="$q.screen.gt.xs ? 'Tambah Produk' : ''"
-          no-caps
-          unelevated
-          class="q-ml-sm"
-          @click="openPicker"
-        >
-          <q-tooltip
-            v-if="$q.screen.xs"
-            anchor="top middle"
-            self="bottom middle"
-          >
-            Tambah Produk
-          </q-tooltip>
-        </q-btn> -->
       </q-card-section>
       <q-separator />
 
@@ -136,19 +129,6 @@
               <div class="text-subtitle2 text-weight-medium ellipsis">
                 {{ it.item?.name ?? "-" }}
               </div>
-              <div class="text-caption text-grey-7">
-                SKU: {{ it.item?.sku ?? "-" }}
-              </div>
-              <div
-                v-if="it.item?.parent?.name ?? it.item?.parentId"
-                class="text-caption text-grey-7 q-mt-xs"
-              >
-                <q-icon name="account_tree" size="14px" class="q-mr-xs" />
-                Induk: {{ it.item?.parent?.name ?? it.item?.parentId }}
-              </div>
-              <div class="text-caption text-blue-9 text-weight-bold">
-                {{ formatCurrency(it.sellingPriceSnapshot) }}
-              </div>
             </div>
             <q-btn
               icon="delete"
@@ -162,17 +142,6 @@
           <div class="row q-col-gutter-sm q-mt-sm items-end item-inputs">
             <div class="col">
               <q-input
-                v-model.number="it.sellingPriceSnapshot"
-                type="number"
-                dense
-                outlined
-                label="Harga"
-                :readonly="!!it.item"
-                @update:model-value="recalc"
-              />
-            </div>
-            <div class="col-5">
-              <q-input
                 v-model.number="it.outQty"
                 type="number"
                 dense
@@ -182,13 +151,6 @@
                 :class="{ 'qty-invalid': !isOutQtyValid(it) }"
                 @update:model-value="recalc"
               />
-            </div>
-          </div>
-          <div class="row items-center q-mt-xs">
-            <div class="text-caption text-grey-7">Subtotal</div>
-            <q-space />
-            <div class="text-subtitle2 text-weight-bold text-blue-9">
-              {{ formatCurrency(it.subtotal) }}
             </div>
           </div>
         </div>
@@ -205,20 +167,6 @@
         :rows-per-page-options="[0]"
         hide-pagination
       >
-        <template #body-cell-sellingPriceSnapshot="props">
-          <q-td :props="props">
-            <q-input
-              v-model.number="props.row.sellingPriceSnapshot"
-              type="number"
-              dense
-              outlined
-              :readonly="!!props.row.item"
-              input-class="text-left"
-              style="min-width: 120px"
-              @update:model-value="recalc"
-            />
-          </q-td>
-        </template>
         <template #body-cell-outQty="props">
           <q-td :props="props">
             <q-input
@@ -232,11 +180,6 @@
               style="min-width: 110px"
               @update:model-value="recalc"
             />
-          </q-td>
-        </template>
-        <template #body-cell-subtotal="props">
-          <q-td :props="props" class="text-right text-weight-bold">
-            {{ formatCurrency(props.row.subtotal) }}
           </q-td>
         </template>
         <template #body-cell-actions="props">
@@ -258,25 +201,30 @@
         v-if="form.items.length > 0"
         class="row items-center bg-grey-2 q-py-md"
       >
-        <div class="text-subtitle1">Total Estimasi</div>
+        <div class="text-subtitle1">Total Qty</div>
         <q-space />
         <div class="text-h6 text-blue-9 text-weight-bold">
-          {{ formatCurrency(totalSubtotal) }}
+          {{ totalQty }}
         </div>
       </q-card-section>
     </q-card>
-
-    <!-- <ItemPickerDialog
-      v-model="pickerOpen"
-      :pre-selected-ids="form.items.map((it) => it.itemId)"
-      @pick="onPickItem"
-      @pick-multiple="onPickItems"
-    /> -->
 
     <!-- ====== Action Footer (responsive) ====== -->
     <div class="action-footer">
       <div class="action-footer-inner">
         <q-btn
+          v-if="isEditMode"
+          flat
+          color="negative"
+          icon="delete"
+          label="Hapus Sesi"
+          no-caps
+          :loading="deleting"
+          class="action-btn"
+          @click="confirmDelete"
+        />
+        <q-btn
+          v-else
           flat
           label="Reset"
           no-caps
@@ -287,8 +235,8 @@
         <q-btn
           color="primary"
           unelevated
-          icon="check"
-          label="Buka Sesi"
+          :icon="isEditMode ? 'save' : 'check'"
+          :label="isEditMode ? 'Simpan Perubahan' : 'Buka Sesi'"
           no-caps
           :disable="!canSubmit"
           :loading="submitting"
@@ -308,38 +256,36 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { date, useQuasar } from "quasar";
 import type { QTableColumn } from "quasar";
 import { useStockSessionStore } from "@/stores/stock-session/stock-session-store";
-import { formatCurrency } from "@/composables/format";
 import type {
   DriverDto,
+  StockSessionDto,
   StockSessionItemInputDto,
 } from "./types/stock-session";
 
-type FormItem = StockSessionItemInputDto & {
-  sellingPriceSnapshot: number;
-  subtotal: number;
-};
+type FormItem = StockSessionItemInputDto;
 
 interface ItemRow {
   itemId: string;
-  item?: {
-    name?: string;
-    sku?: string;
-    parentId?: string;
-    parent?: { name?: string } | undefined;
-  };
   outQty: number;
-  returnQty: number;
-  soldQty: number;
-  sellingPriceSnapshot: number;
-  subtotal: number;
 }
+
+const props = defineProps<{
+  /**
+   * When provided, the form enters "edit mode": it loads the existing
+   * OPEN session and submits via `updateSession` instead of
+   * `openSession`. When null/undefined, the form behaves as a fresh
+   * "open new session" flow.
+   */
+  sessionId?: string | null;
+}>();
 
 const emit = defineEmits<{
   (e: "saved"): void;
+  (e: "deleted"): void;
 }>();
 
 const $q = useQuasar();
@@ -353,34 +299,17 @@ const form = reactive({
 
 const drivers = ref<DriverDto[]>([]);
 const submitting = ref(false);
+const deleting = ref(false);
+const loadedSession = ref<StockSessionDto | null>(null);
+
+const isEditMode = computed(() => !!props.sessionId && !!loadedSession.value);
 
 const itemColumns: QTableColumn<ItemRow>[] = [
   {
     name: "name",
     label: "Produk",
-    field: (r) => r.item?.name ?? "-",
-    align: "left",
-    sortable: false,
-  },
-  {
-    name: "sku",
-    label: "SKU",
-    field: (r) => r.item?.sku ?? "-",
-    align: "left",
-    sortable: false,
-  },
-  {
-    name: "parentId",
-    label: "Item Induk",
     field: (r) =>
-      r.item?.parent?.name ?? (r.item?.parentId ? r.item.parentId : "—"),
-    align: "left",
-    sortable: false,
-  },
-  {
-    name: "sellingPriceSnapshot",
-    label: "Harga Jual",
-    field: "sellingPriceSnapshot",
+      form.items.find((i) => i.itemId === r.itemId)?.item?.name ?? "-",
     align: "left",
     sortable: false,
   },
@@ -389,13 +318,6 @@ const itemColumns: QTableColumn<ItemRow>[] = [
     label: "Out Qty",
     field: "outQty",
     align: "left",
-    sortable: false,
-  },
-  {
-    name: "subtotal",
-    label: "Subtotal",
-    field: "subtotal",
-    align: "right",
     sortable: false,
   },
   {
@@ -417,8 +339,8 @@ const driverOptions = computed(() =>
   })),
 );
 
-const totalSubtotal = computed(() =>
-  form.items.reduce((sum, it) => sum + (it.subtotal ?? 0), 0),
+const totalQty = computed(() =>
+  form.items.reduce((sum, it) => sum + Math.max(0, Number(it.outQty) || 0), 0),
 );
 
 const isOutQtyValid = (it: FormItem): boolean =>
@@ -427,7 +349,12 @@ const isOutQtyValid = (it: FormItem): boolean =>
 const invalidItemNames = computed(() =>
   form.items
     .filter((it) => !Number.isInteger(it.outQty) || (it.outQty ?? 0) < 1)
-    .map((it) => it.item?.name ?? it.itemId),
+    .map((it) => {
+      const found = loadedSession.value?.items.find(
+        (i) => i.itemId === it.itemId,
+      );
+      return found?.item?.name ?? it.itemId;
+    }),
 );
 
 const canSubmit = computed(
@@ -446,8 +373,7 @@ const filterDrivers = (val: string, update: (fn: () => void) => void) => {
   });
 };
 
-const onDriverChange = async (val: DriverDto) => {
-  console.log(val);
+const onDriverChange = async () => {
   if (!form.employeeId) return;
   const existing = await store.getTodaySession(form.employeeId, form.date);
   if (existing) {
@@ -461,119 +387,91 @@ const onDriverChange = async (val: DriverDto) => {
 };
 
 // ====== Load items for the selected driver ======
-const loading = ref(false);
 const loadItems = async () => {
   if (!form.employeeId) return;
-  try {
-    await store.fetchItems(form.employeeId, "", {
-      session: "MORNING",
-    }); // employeeId = adminID
-  } finally {
-    loading.value = false;
-  }
-  // Pre-fill the form with the driver's items, but only if the form is
-  // currently empty (i.e. the admin hasn't already added some items).
+  await store.fetchItems(form.employeeId, "", {
+    session: "MORNING",
+  });
   form.items = store.items.map((it) => ({
     itemId: it.id,
     item: it,
     outQty: 0,
     returnQty: 0,
-    sellingPriceSnapshot: it.sellingPrice,
-    subtotal: 0,
     cashlessSoldQty: 0,
     cashSoldQty: 0,
     soldQty: 0,
   }));
 };
 
-// const openPicker = () => {
-//   // Capture the row snapshot at open-time so the dialog's final
-//   // selection can be reconciled as additions vs. removals.
-//   dialogOpenSnapshot = new Set(form.items.map((it) => it.itemId));
-//   pickerOpen.value = true;
-// };
-
-// Snapshot taken when the picker dialog opens. Used to reconcile
-// additions vs removals when the dialog emits its final selection.
-// `form.items` snapshot is taken via `openPicker` and read here.
-// const dialogOpenSnapshot = new Set<string>();
-
-// const onPickItem = (p: ItemDto) => {
-//   if (form.items.some((it) => it.itemId === p.id)) {
-//     return;
-//   }
-//   form.items.push({
-//     itemId: p.id,
-//     item: p,
-//     outQty: 0,
-//     returnQty: 0,
-//     sellingPriceSnapshot: p.sellingPrice,
-//     subtotal: 0,
-//   } as FormItem);
-// };
-
-/**
- * Multi-select handler fired by the picker dialog when the admin taps
- * "Pilih". Reconciles the form against the dialog's final selection:
- *
- *   - items checked in the dialog that were NOT in form.items → append
- *   - items that WERE in form.items but unchecked in the dialog → remove
- *   - items present in both → unchanged (e.g. admin toggled & re-toggled)
- *
- * The snapshot is captured at dialog-open time so we only act on
- * items the admin actually touches, not on rows that were already in
- * the form from some earlier interaction.
- */
-// const onPickItems = (picks: ItemDto[]): void => {
-//   const finalIds = new Set(picks.map((p) => p.id));
-//   // Removals: items that were in the snapshot but are now unchecked.
-//   const toRemove = [...dialogOpenSnapshot].filter((id) => !finalIds.has(id));
-//   for (const id of toRemove) {
-//     const idx = form.items.findIndex((it) => it.itemId === id);
-//     if (idx >= 0) form.items.splice(idx, 1);
-//   }
-//   // Additions: items now checked that weren't there.
-//   let added = 0;
-//   for (const p of picks) {
-//     if (form.items.some((it) => it.itemId === p.id)) continue;
-//     form.items.push({
-//       itemId: p.id,
-//       item: p,
-//       outQty: 0,
-//       returnQty: 0,
-//       sellingPriceSnapshot: p.sellingPrice,
-//       subtotal: 0,
-//     } as FormItem);
-//     added++;
-//   }
-//   dialogOpenSnapshot = finalIds; // refresh for next open
-//   // Friendly feedback when only removals happened (no toast spam).
-//   if (added === 0 && toRemove.length === 0) {
-//     $q.notify({
-//       type: "info",
-//       message: "Tidak ada perubahan pada produk yang dibawa.",
-//     });
-//   }
-// };
-
 const removeItem = (idx: number) => {
   form.items.splice(idx, 1);
 };
 
-const recalc = () => {
-  for (const it of form.items) {
-    const sold = Math.max(0, (it.outQty ?? 0) - (it.returnQty ?? 0));
-    it.subtotal = sold * (it.sellingPriceSnapshot ?? 0);
-  }
-};
-
-const reset = () => {
+const reset = (): void => {
   form.employeeId = "";
   form.date = date.formatDate(new Date(), "YYYY-MM-DD");
   form.items = [];
+  loadedSession.value = null;
 };
 
 defineExpose({ reset });
+
+const recalc = (): void => {
+  // No-op for the morning form: subtotal columns are gone, and
+  // `outQty` itself is the only numeric input the user edits here.
+  // Keeping the function makes the q-input `@update:model-value`
+  // binding a single-line change in the parent.
+};
+
+// Edit-mode loader
+const loadSessionIntoForm = async (id: string): Promise<void> => {
+  try {
+    const s = await store.getSession(id);
+    if (s.status !== "OPEN") {
+      $q.notify({
+        type: "negative",
+        message: `Sesi ini sudah ${s.status === "CLOSED" ? "ditutup" : "tidak dapat diedit"}.`,
+      });
+      emit("deleted"); // bounce out of edit mode
+      return;
+    }
+    loadedSession.value = s;
+    form.employeeId = s.employeeId;
+    form.date = s.date;
+    form.items = (s.items ?? []).map((it) => ({
+      itemId: it.itemId,
+      item: it.item,
+      outQty: it.outQty,
+      returnQty: it.returnQty,
+      cashSoldQty: it.cashSoldQty,
+      cashlessSoldQty: it.cashlessSoldQty,
+      soldQty: it.soldQty,
+    }));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    $q.notify({
+      type: "negative",
+      message: "Gagal memuat sesi untuk diedit.",
+      caption: message,
+    });
+    emit("deleted"); // bounce out
+  }
+};
+
+// Re-load if the route's sessionId changes (e.g. user navigates
+// from one edit button to another).
+watch(
+  () => props.sessionId,
+  async (id) => {
+    loadedSession.value = null;
+    if (!id) {
+      reset();
+      return;
+    }
+    await loadSessionIntoForm(id);
+  },
+  { immediate: true },
+);
 
 const submit = async () => {
   if (!canSubmit.value) {
@@ -595,23 +493,69 @@ const submit = async () => {
         item: it.item,
       })),
     };
-    const result = await store.openSession(payload);
-    $q.notify({
-      type: "positive",
-      message: "Sesi pagi berhasil dibuka.",
-      caption: result.id,
-    });
+    if (isEditMode.value && props.sessionId) {
+      await store.updateSession(props.sessionId, payload);
+      $q.notify({
+        type: "positive",
+        message: "Sesi pagi berhasil diperbarui.",
+      });
+    } else {
+      const result = await store.openSession(payload);
+      $q.notify({
+        type: "positive",
+        message: "Sesi pagi berhasil dibuka.",
+        caption: result.id,
+      });
+    }
     emit("saved");
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     $q.notify({
       type: "negative",
-      message: "Gagal membuka sesi.",
+      message: "Gagal menyimpan sesi.",
       caption: message,
     });
   } finally {
     submitting.value = false;
   }
+};
+
+const confirmDelete = (): void => {
+  if (!props.sessionId) return;
+  $q.dialog({
+    title: "Hapus Sesi Pagi?",
+    message:
+      "Tindakan ini tidak dapat dibatalkan. Semua item yang terkait sesi ini akan ikut terhapus.",
+    ok: {
+      label: "Hapus",
+      color: "negative",
+      unelevated: true,
+      noCaps: true,
+    },
+    cancel: { label: "Batal", color: "grey-7", flat: true, noCaps: true },
+    persistent: true,
+  }).onOk(() => {
+    void (async () => {
+      deleting.value = true;
+      try {
+        await store.deleteSession(props.sessionId as string);
+        $q.notify({
+          type: "positive",
+          message: "Sesi pagi berhasil dihapus.",
+        });
+        emit("deleted");
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        $q.notify({
+          type: "negative",
+          message: "Gagal menghapus sesi.",
+          caption: message,
+        });
+      } finally {
+        deleting.value = false;
+      }
+    })();
+  });
 };
 
 onMounted(async () => {
@@ -716,13 +660,6 @@ onMounted(async () => {
 }
 
 // ----- Item row input alignment (desktop table + mobile cards) -----
-// Keep the readonly "Harga" input visually consistent with the editable
-// "Out Qty" input so the two columns align cleanly.
-:deep(.q-table td .q-field--dense.q-field--readonly .q-field__control) {
-  background: #f5f5f5;
-  border-radius: 4px;
-}
-
 :deep(.q-table td .q-field--dense .q-field__control),
 :deep(.mobile-item-card .q-field--dense .q-field__control) {
   min-height: 36px;
@@ -735,10 +672,6 @@ onMounted(async () => {
   padding: 4px 0;
 }
 
-// Pin the Harga + Out Qty row so the two input boxes share the same
-// baseline. Without `align-items: flex-end` + a fixed-height control,
-// Quasar fields with `:rules` reserve extra vertical space (error area)
-// and push the Out Qty box down relative to the readonly Harga box.
 .item-inputs {
   align-items: flex-end !important;
 }

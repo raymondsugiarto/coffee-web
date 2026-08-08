@@ -246,7 +246,32 @@
               }"
             />
             <q-btn
-              v-else
+              v-if="row.status === 'OPEN'"
+              flat
+              color="blue-9"
+              icon="edit"
+              label="Edit"
+              no-caps
+              class="col"
+              size="sm"
+              :to="{
+                name: 'stock-session-morning',
+                query: { sessionId: row.id },
+              }"
+            />
+            <q-btn
+              v-if="row.status === 'OPEN'"
+              flat
+              color="negative"
+              icon="delete"
+              label="Hapus"
+              no-caps
+              class="col"
+              size="sm"
+              @click="confirmDelete(row)"
+            />
+            <q-btn
+              v-if="row.status !== 'OPEN'"
               flat
               color="primary"
               icon="visibility"
@@ -357,7 +382,32 @@
                 }"
               />
               <q-btn
-                v-else
+                v-if="props.row.status === 'OPEN'"
+                flat
+                color="blue-9"
+                icon="edit"
+                aria-label="Edit sesi"
+                size="sm"
+                :to="{
+                  name: 'stock-session-morning',
+                  query: { sessionId: props.row.id },
+                }"
+              >
+                <q-tooltip>Edit sesi pagi</q-tooltip>
+              </q-btn>
+              <q-btn
+                v-if="props.row.status === 'OPEN'"
+                flat
+                color="negative"
+                icon="delete"
+                aria-label="Hapus sesi"
+                size="sm"
+                @click="confirmDelete(props.row)"
+              >
+                <q-tooltip>Hapus sesi pagi</q-tooltip>
+              </q-btn>
+              <q-btn
+                v-if="props.row.status !== 'OPEN'"
                 flat
                 color="primary"
                 icon="visibility"
@@ -639,6 +689,45 @@ const onRequest = async (props: {
 const applyFilters = async (): Promise<void> => {
   pagination.value.page = 1; // q-table is 1-based — first page == 1
   await loadPage();
+};
+
+/**
+ * Confirmation dialog before destroying an OPEN morning session. The
+ * deletion cascades to items / payments / adjustments on the server
+ * side, so we surface the destructive intent explicitly.
+ */
+const confirmDelete = (row: SessionRow): void => {
+  if (row.status !== "OPEN") return;
+  $q.dialog({
+    title: "Hapus Sesi Pagi?",
+    message: `Sesi untuk ${driverName(row)} pada ${row.date} akan dihapus beserta semua itemnya. Tindakan ini tidak dapat dibatalkan.`,
+    ok: {
+      label: "Hapus",
+      color: "negative",
+      unelevated: true,
+      noCaps: true,
+    },
+    cancel: { label: "Batal", color: "grey-7", flat: true, noCaps: true },
+    persistent: true,
+  }).onOk(() => {
+    void (async () => {
+      try {
+        await store.deleteSession(row.id);
+        $q.notify({
+          type: "positive",
+          message: "Sesi pagi berhasil dihapus.",
+        });
+        await loadPage();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        $q.notify({
+          type: "negative",
+          message: "Gagal menghapus sesi.",
+          caption: message,
+        });
+      }
+    })();
+  });
 };
 
 const resetFilters = async (): Promise<void> => {
